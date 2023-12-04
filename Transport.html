@@ -26,8 +26,8 @@
     }
 
     .matrixField,
-    .pinkField,
-    .blueField {
+    .purpleField,
+    .pinkField {
         border-color: rgb(219, 219, 219);
         padding: 5px;
         margin: 2px;
@@ -37,11 +37,11 @@
         width: 25px;
     }
 
-    .pinkField {
+    .purpleField {
         background-color: purple;
     }
 
-    .blueField {
+    .pinkField {
         background-color: plum;
     }
 </style>
@@ -50,105 +50,166 @@
     <input id="numOfConsumers" placeholder="Количество потребителей"></input>
     <input id="numOfProducers" placeholder="Количество производителей"></input>
 
-    <button id="submit">Кнопка</button>
-    <button id="calculate">Рассчитать</button>
+    <button id="submitBtn">Создать матрицу</button>
+    <button id="calcBtn" disabled>Рассчитать</button>
     <div id="matrix"></div>
     <script>
-        let numOfCons = document.getElementById("numOfConsumers");
-        let numOfProd = document.getElementById("numOfProducers");
-        let submit = document.getElementById("submit");
-        // let arrOfCons = [];
-        // let arrOfProd = [];
-        // let arrOfTaxes = [];
-        let taxesValues = [];
-        let consValues = [];
-        let prodsValues = [];
-        let arr = [];
+        const numOfCons = document.getElementById("numOfConsumers");
+        const numOfProd = document.getElementById("numOfProducers");
+        const submitBtn = document.getElementById("submitBtn");
 
-        const fillCells = (taxes, cons, prods) => {
-            taxes.forEach((input, index) => {
-                arr.push(input.value);
-                if (index != 0) {
-                    if (arr.length % numOfCons.value == 0) {
-                        console.log("arr ", arr);
-                        taxesValues.push(arr.slice(arr.length - numOfCons.value));
-                        console.log("arr 0 ", arr);
-                    }
-                }
+        const taxesValues = [];
+        const consValues = [];
+        const prodsValues = [];
+        const matrixCells = [];              // двойной массив со значениями (какой поставщик сколько кому везет товару)
+        // const potentialsClmn = [];      // потенциалы, которые слева пишем обычно
+        // const potentialsStr = [];       // потенциалы, которые пишем сверху
+        // const matrPotentials = [];      // разница суммы потенциалов и тарифа для каждой [пустой] ячейки
+
+        const check = () => {               //проверка на сбалансированность
+            let sumCons = 0;
+            let sumProds = 0;
+
+            consValues.forEach((value) => {
+                sumCons += value;
             });
-            console.log("taxesValues ", taxesValues);
-            cons.forEach((input) => consValues.push(input.value))
-            console.log("Cons", consValues)
-            prods.forEach((input) => prodsValues.push(input.value))
-            console.log("Prods", prodsValues)
-            const check = () => {//проверка на сбалансированность
-                let sumCons = 0;
-                let sumProds = 0;
+            prodsValues.forEach((value) => {
+                sumProds += value;
+            })
+            console.log("sumCons", sumCons);
+            console.log("sumProds", sumProds)
 
-                consValues.forEach((value) => {
-                    sumCons += (value - 0);
-                });
-                prodsValues.forEach((value) => {
-                    sumProds += (value - 0);
-                })
-                console.log("sumCons", sumCons);
-                console.log("sumProds", sumProds)
-
-                if (sumCons === sumProds) {
-                    return true;
-                } else {
-                    return false;
-                }
+            if (sumCons === sumProds) {
+                return true;
+            } else {
+                return false;
             }
+        }
+
+        const fillCells = (matrix, cons, prods) => {
+            for (let i = 0; i < prods.length; i++) {
+                const arr = [];
+                for (let j = 0; j < cons.length; j++) {
+                    arr.push({ i, j, value: 0, tax: matrix[i * cons.length + j].value - 0 })
+                }
+                matrixCells.push(arr);
+            }
+
+            console.log("matrixCells ", matrixCells);
+            cons.forEach((input) => consValues.push(input.value - 0));
+            console.log("Cons", consValues);
+            prods.forEach((input) => prodsValues.push(input.value - 0));
+            console.log("Prods", prodsValues);
+
             if (!check()) {
                 alert("Задача несбалансированная!");
             }
         }
 
-        const findMinTax = (arr) => {
-            const values = arr.flat();
-            const min = values.reduce((x, y) => Math.min(x, y));
-            console.log("min ", min)
-            return min;
+        // служебные функции
+
+        const findMinValueElem = matrix => {
+            let minElem = { i: 0, j: 0, value: 1000, tax: 0 };
+            matrix.forEach((arr, i) => arr.forEach((elem, j) => {
+                let num = elem.value - 0;
+                if (num < minElem.value) minElem = { i: i, j: j, value: num };
+            }))
+            console.log("elem with min value ", minElem);
+            return minElem;
         }
 
-        const findMinElem = (array, minTax) => {
+        const findMaxValueElem = matrix => {
+            let maxElem = { i: 0, j: 0, value: 0, tax: 0 };
+            matrix.forEach((arr, i) => arr.forEach((value, j) => {
+                let num = value - 0;
+                if (num > maxElem.value) maxElem = { i: i, j: j, value: num };
+            }))
+            console.log("max ", maxElem);
+            return maxElem;
+        }
+
+        const findMinTaxElem = matrix => {
+            let minElem = { i: 0, j: 0, value: 0, tax: 1000 };
+            matrix.forEach((arr, i) => arr.forEach((elem, j) => {
+                let num = elem.tax - 0;
+                if (num < minElem.tax) minElem = { i, j, value: elem.value - 0, tax: num };
+            }))
+            console.log("elem with min value ", minElem);
+            return minElem;
+        }
+
+        const findMinElemIndex = (array, minTax) => {
             let minElem;
             array.forEach((elem, index) => { if (elem.value == minTax) minElem = index; });
             console.log("minElem ", minElem);
             return minElem;
         }
 
-        const calc = document.getElementById("calculate");
-        calc.addEventListener('click', () => {
-            let inputs = document.querySelectorAll('.matrixField');
-            let cons = document.querySelectorAll('.blueField');
-            let prods = document.querySelectorAll('.pinkField');
-            fillCells(inputs, cons, prods);
-            
-            const minTax = findMinTax(taxesValues);
-            const minElemIndex = findMinElem(inputs, minTax);
+        // опорный план
+        const createReferencePlan = () => {
+            const prodsValuesCopy = prodsValues.slice();
+            const consValuesCopy = consValues.slice();
+            let matrixCellsCopy = [];
+            matrixCells.forEach(arr => {
+                const newArr = arr.slice();
+                matrixCellsCopy.push(newArr);
+            });
 
-            let indexOfProd = Math.trunc(minElemIndex / prods.length);
-            let indexOfCons = minElemIndex % cons.length;
+            let sumProds;
+            let sumCons;
+
+            do {
+                const minTaxCell_1 = findMinTaxElem(matrixCellsCopy);
+                console.log("minTaxCell_1 ", minTaxCell_1)
+                const i = minTaxCell_1.i;
+                const j = minTaxCell_1.j;
+                const prod = prodsValuesCopy[i]
+                const con = consValuesCopy[j]
+                const value = prod < con ? prod : con;
+                matrixCells[i][j].value = value;
+                prodsValuesCopy[i] -= value;
+                consValuesCopy[j] -= value;
+                sumProds = prodsValuesCopy.reduce(
+                    (accumulator, value) => accumulator + value, 0
+                );
+                sumCons = consValuesCopy.reduce(
+                    (accumulator, value) => accumulator + value, 0
+                );
+                matrixCellsCopy[i][j] = {};
+            } while (sumProds != 0 || sumCons != 0)
+
+            console.log("Опорный план: ", matrixCells);
+        }
+
+        const calcBtn = document.getElementById("calcBtn");
+        calcBtn.addEventListener('click', () => {
+            let inputs = document.querySelectorAll('.matrixField');
+            let cons = document.querySelectorAll('.pinkField');
+            let prods = document.querySelectorAll('.purpleField');
+            fillCells(inputs, cons, prods);
+            console.log("matrixCells ", matrixCells)
+
+            // const minTaxCell = findMinTaxElem(matrixCells);
+            // const minElemIndex = findMinElemIndex(inputs, minTax);
+
+            // let indexOfProd = Math.trunc(minElemIndex / prods.length);
+            // let indexOfCons = minElemIndex % cons.length;
+
+            createReferencePlan();
         });
 
-        submit.addEventListener('click', () => {
+        submitBtn.addEventListener('click', e => {
             if (numOfCons.value && numOfProd.value) {
                 for (let i = 0; i <= numOfProd.value; i++) {                //созданы поля для заполнения 
                     for (let j = 0; j <= numOfCons.value; j++) {
                         if (i != numOfProd.value || j != numOfCons.value) {
                             const input = document.createElement('input');
                             document.getElementById('matrix').appendChild(input);
-
                             if (j == numOfCons.value && i != numOfProd.value) {
-                                // arrOfCons.push(input);
-                                input.setAttribute("class", "pinkField");
+                                input.setAttribute("class", "purpleField");
                             } else if (i == numOfProd.value && j != numOfCons.value) {
-                                // arrOfProd.push(input);
-                                input.setAttribute("class", "blueField");
+                                input.setAttribute("class", "pinkField");
                             } else {
-                                // arrOfTaxes.push(input);
                                 input.setAttribute("class", "matrixField");
                             }
                         }
@@ -156,6 +217,8 @@
                     document.getElementById('matrix').innerHTML += '<br>';
                 }
             }
+            calcBtn.disabled = false;
+            e.target.disabled = true;
         });
 
     </script>

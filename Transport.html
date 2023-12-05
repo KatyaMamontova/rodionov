@@ -61,10 +61,10 @@
         const taxesValues = [];
         const consValues = [];
         const prodsValues = [];
-        const matrixCells = [];              // двойной массив со значениями (какой поставщик сколько кому везет товару)
-        // const potentialsClmn = [];      // потенциалы, которые слева пишем обычно
-        // const potentialsStr = [];       // потенциалы, которые пишем сверху
-        // const matrPotentials = [];      // разница суммы потенциалов и тарифа для каждой [пустой] ячейки
+        const matrixCells = [];         // двойной массив со значениями (какой поставщик сколько кому везет товару)
+        const potentialsClmn = [];      // потенциалы, которые слева пишем обычно
+        const potentialsStr = [];       // потенциалы, которые пишем сверху
+        const matrPotentials = [];      // разница суммы потенциалов и тарифа для каждой [пустой] ячейки
 
         const check = () => {               //проверка на сбалансированность
             let sumCons = 0;
@@ -178,7 +178,36 @@
                 matrixCellsCopy[i][j] = {};
             } while (sumProds != 0 || sumCons != 0)
 
+            // if() - сделать проверку на  m + n - 1
+            findPotentials();
             console.log("Опорный план: ", matrixCells);
+        }
+
+        const findPotentials = () => {
+            potentialsClmn[0] = 0;
+            matrixCells[0].forEach(elem => {
+                if (elem.value != 0) { potentialsStr[elem.j] = elem.tax - 0 }
+            });
+
+            // const max = matrixCells.length > matrixCells[0].length ? matrixCells.length : matrixCells[0].length;
+            // for (let k = 0; k < max; k++) {
+            potentialsStr.forEach((potential, clmnNum) => {
+                matrixCells.forEach((arr, strNum) => {
+                    if (arr[clmnNum].value) {
+                        potentialsClmn[strNum] = arr[clmnNum].tax - potentialsStr[clmnNum];
+                        console.log(" arr[clmnNum].tax ", arr[clmnNum])
+                    }
+                });
+            });
+            potentialsClmn.forEach((potential, strNum) => {
+                matrixCells[strNum].forEach((elem, clmnNum) => {
+                    if (elem.value != 0) potentialsStr[clmnNum] = elem.tax - potentialsClmn[strNum];
+                })
+            })
+            // }
+
+            console.log("potentialsStr ", potentialsStr);
+            console.log("potentialsClmn ", potentialsClmn);
         }
 
         const calcBtn = document.getElementById("calcBtn");
@@ -196,6 +225,7 @@
             // let indexOfCons = minElemIndex % cons.length;
 
             createReferencePlan();
+
         });
 
         submitBtn.addEventListener('click', e => {

@@ -90,7 +90,13 @@
             for (let i = 0; i < prods.length; i++) {
                 const arr = [];
                 for (let j = 0; j < cons.length; j++) {
-                    arr.push({ i, j, value: 0, tax: matrix[i * cons.length + j].value - 0 })
+                    arr.push({
+                        i,
+                        j,
+                        value: 0,
+                        tax: matrix[i * cons.length + j].value - 0,
+                        potentialDiff: 0
+                    })
                 }
                 matrixCells.push(arr);
             }
@@ -160,7 +166,6 @@
 
             do {
                 const minTaxCell_1 = findMinTaxElem(matrixCellsCopy);
-                console.log("minTaxCell_1 ", minTaxCell_1)
                 const i = minTaxCell_1.i;
                 const j = minTaxCell_1.j;
                 const prod = prodsValuesCopy[i]
@@ -179,7 +184,6 @@
             } while (sumProds != 0 || sumCons != 0)
 
             // if() - сделать проверку на  m + n - 1
-            findPotentials();
             console.log("Опорный план: ", matrixCells);
         }
 
@@ -189,25 +193,81 @@
                 if (elem.value != 0) { potentialsStr[elem.j] = elem.tax - 0 }
             });
 
-            // const max = matrixCells.length > matrixCells[0].length ? matrixCells.length : matrixCells[0].length;
-            // for (let k = 0; k < max; k++) {
-            potentialsStr.forEach((potential, clmnNum) => {
-                matrixCells.forEach((arr, strNum) => {
-                    if (arr[clmnNum].value) {
-                        potentialsClmn[strNum] = arr[clmnNum].tax - potentialsStr[clmnNum];
-                        console.log(" arr[clmnNum].tax ", arr[clmnNum])
-                    }
+            const max = matrixCells.length > matrixCells[0].length ? matrixCells.length : matrixCells[0].length;
+            for (let k = 0; k < max; k++) {
+                potentialsStr.forEach((potential, clmnNum) => {
+                    matrixCells.forEach((arr, strNum) => {
+                        if (arr[clmnNum].value) {
+                            potentialsClmn[strNum] = arr[clmnNum].tax - potentialsStr[clmnNum];
+                        }
+                    });
                 });
-            });
-            potentialsClmn.forEach((potential, strNum) => {
-                matrixCells[strNum].forEach((elem, clmnNum) => {
-                    if (elem.value != 0) potentialsStr[clmnNum] = elem.tax - potentialsClmn[strNum];
+                potentialsClmn.forEach((potential, strNum) => {
+                    matrixCells[strNum].forEach((elem, clmnNum) => {
+                        if (elem.value != 0) potentialsStr[clmnNum] = elem.tax - potentialsClmn[strNum];
+                    })
                 })
-            })
-            // }
+            }
 
             console.log("potentialsStr ", potentialsStr);
             console.log("potentialsClmn ", potentialsClmn);
+        }
+
+        const calcPotentialDifference = () => {
+            matrixCells.forEach((str, strNum) => str.forEach(
+                elem => elem.potentialDiff = potentialsClmn[elem.i] + potentialsStr[elem.j] - elem.tax));
+            let maxPotentialDiffElem = matrixCells[0][0];
+            matrixCells.forEach(arr => arr.forEach(elem => {
+                if (elem.potentialDiff > maxPotentialDiffElem.potentialDiff) maxPotentialDiffElem = elem;
+            }));
+            console.log("maxPotentialDiffElem ", maxPotentialDiffElem);
+            return maxPotentialDiffElem;
+        }
+
+        const makeContour = element => {
+            const contour = [];
+            matrixCells.forEach(arr => {
+                const newArr = arr.slice();
+                contour.push(newArr);
+            });
+
+            const max = matrixCells.length > matrixCells[0].length ? matrixCells.length : matrixCells[0].length;
+            for (let k = 0; k < max; k++) {
+                contour.forEach((str, strNum) => {
+                    if (strNum != element.i) {
+                        let counterElemsInStr = 0;
+                        str.forEach(elem => {
+                            if (elem)
+                                if (elem.value) counterElemsInStr++;
+                        })
+                        if (counterElemsInStr < 2) contour[strNum] = [];
+                    }
+                });
+
+                let clmns = [];
+                for (let clmnNum = 0; clmnNum < contour[0].length; clmnNum++) {
+                    clmns.push([])
+                    for (let strNum = 0; strNum < contour.length; strNum++) {
+                        if (contour[strNum][clmnNum]) {
+                            if (contour[strNum][clmnNum].value != 0) {
+                                clmns[clmnNum].push(contour[strNum][clmnNum]);
+                            }
+                        }
+                    }
+                }
+                clmns.forEach((clmn, clmnNum) => {
+                    if (clmn.length < 2) contour.forEach(str => {
+                        if (clmnNum != element.j) {
+                            str[clmnNum] = null;
+                        }
+                    });
+                })
+            }
+
+            let finalContour = [];
+            contour.flat().forEach(elem => { if (elem) finalContour.push(elem) });
+            console.log("Contour ", finalContour);
+            return finalContour;
         }
 
         const calcBtn = document.getElementById("calcBtn");
@@ -216,16 +276,13 @@
             let cons = document.querySelectorAll('.pinkField');
             let prods = document.querySelectorAll('.purpleField');
             fillCells(inputs, cons, prods);
-            console.log("matrixCells ", matrixCells)
-
-            // const minTaxCell = findMinTaxElem(matrixCells);
-            // const minElemIndex = findMinElemIndex(inputs, minTax);
-
-            // let indexOfProd = Math.trunc(minElemIndex / prods.length);
-            // let indexOfCons = minElemIndex % cons.length;
+            console.log("matrixCells ", matrixCells);
 
             createReferencePlan();
-
+            findPotentials();
+            const maxPotentialDiffElem = calcPotentialDifference();
+            const contour = makeContour(maxPotentialDiffElem);
+            
         });
 
         submitBtn.addEventListener('click', e => {

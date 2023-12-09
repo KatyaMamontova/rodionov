@@ -57,9 +57,11 @@
         background-color: rgb(255, 145, 0);
         color: white;
     }
-    .neutral:hover{        
+
+    .neutral:hover {
         background-color: rgb(250, 250, 250);
     }
+
     .bright:hover {
         background-color: rgb(255, 166, 0);
     }
@@ -69,11 +71,11 @@
     <table>
         <tr>
             <td>Количество потребителей (столбцы):</td>
-            <td><input id="numOfConsumers" value="4"></input></td>
+            <td><input id="numOfConsumers" value="5"></input></td>
         </tr>
         <tr>
             <td>Количество производителей (строки):</td>
-            <td><input id="numOfProducers" value="3"></input></td>
+            <td><input id="numOfProducers" value="4"></input></td>
         </tr>
     </table>
     <button id="submitBtn" class="neutral">Создать матрицу</button>
@@ -94,6 +96,7 @@
 
         const absoluteMaximum = 10000;
 
+
         const check = () => {               //проверка на сбалансированность
             let sumCons = 0;
             let sumProds = 0;
@@ -113,6 +116,7 @@
                 return false;
             }
         }
+
 
         const fillCells = (matrix, cons, prods) => {
             const matrixCells = [];
@@ -144,65 +148,36 @@
             return matrixCells;
         }
 
-        // служебные функции
-
-        const findMinValueElem = matrix => {
-            let minElem = { i: 0, j: 0, value: absoluteMaximum, tax: 0 };
-            matrix.forEach((arr, i) => arr.forEach((elem, j) => {
-                let num = elem.value - 0;
-                if (num < minElem.value) minElem = { i: i, j: j, value: num };
-            }))
-            console.log("elem with min value: ", minElem);
-            return minElem;
-        }
-
-        const findMaxValueElem = matrix => {
-            let maxElem = { i: 0, j: 0, value: 0, tax: 0 };
-            matrix.forEach((arr, i) => arr.forEach((value, j) => {
-                let num = value - 0;
-                if (num > maxElem.value) maxElem = { i: i, j: j, value: num };
-            }))
-            console.log("max: ", maxElem);
-            return maxElem;
-        }
 
         const findMinTaxElem = matrix => {
-            let minElem = { i: 0, j: 0, value: 0, tax: absoluteMaximum };
-            matrix.forEach((arr, i) => arr.forEach((elem, j) => {
-                let num = elem.tax - 0;
-                if (num < minElem.tax) minElem = { i, j, value: elem.value - 0, tax: num };
+            let minElemTax = absoluteMaximum;
+            let minElem = {};
+            matrix.forEach(arr => arr.forEach(elem => {
+                if (elem.tax < minElemTax && elem.value === null) {
+                    minElem = elem;
+                    minElemTax = elem.tax;
+                }
             }))
             return minElem;
         }
 
-        const findMinElemIndex = (array, minTax) => {
-            let minElem;
-            array.forEach((elem, index) => { if (elem.value == minTax) minElem = index; });
-            console.log("minElem: ", minElem);
-            return minElem;
-        }
 
         // опорный план
         const createReferencePlan = () => {
             const prodsValuesCopy = prodsValues.slice();
             const consValuesCopy = consValues.slice();
-            let matrixCellsCopy = [];
-            matrixCells.forEach(arr => {
-                const newArr = arr.slice();
-                matrixCellsCopy.push(newArr);
-            });
 
             let sumProds;
             let sumCons;
 
             do {
-                const minTaxCell_1 = findMinTaxElem(matrixCellsCopy);
+                const minTaxCell_1 = findMinTaxElem(matrixCells);
                 const i = minTaxCell_1.i;
                 const j = minTaxCell_1.j;
                 const prod = prodsValuesCopy[i]
                 const con = consValuesCopy[j]
                 const value = prod < con ? prod : con;
-                matrixCells[i][j].value = value;
+                minTaxCell_1.value = value;
                 prodsValuesCopy[i] -= value;
                 consValuesCopy[j] -= value;
                 sumProds = prodsValuesCopy.reduce(
@@ -211,14 +186,25 @@
                 sumCons = consValuesCopy.reduce(
                     (accumulator, value) => accumulator + value, 0
                 );
-                matrixCellsCopy[i][j] = {};
             } while (sumProds != 0 || sumCons != 0)
 
             // if() - сделать проверку на  m + n - 1
+            let counter = 0;
+            matrixCells.forEach(str => str.forEach(elem => { if (elem.value === 0) elem.value = null }));
+            matrixCells.forEach(str => str.forEach(elem => { if (elem.value) counter++ }));
+            let countOfZeroes = (prodsValues.length + consValues.length - 1) - counter;
+            for (let i = 0; i < countOfZeroes; i++) {
+                const minTaxCell_1 = findMinTaxElem(matrixCells);
+                console.log("countOfZeroes matrixCells ", matrixCells)
+                const i = minTaxCell_1.i;
+                const j = minTaxCell_1.j;
+                console.log("minTaxCell_1 ", minTaxCell_1)
+                minTaxCell_1.value = -1;
+            }
 
-            matrixCells.forEach(str => str.forEach(elem => { if (elem.value === 0) elem.value = null }))
             console.log("Опорный план: ", matrixCells);
         }
+
 
         const findPotentials = matrixCells => {
             let potentialsClmn = [];
@@ -246,6 +232,7 @@
             return { potentialsStr, potentialsClmn }
         }
 
+
         const calcPotentialDifference = (matrixCells, potentialsClmn, potentialsStr) => {
             matrixCells.forEach((str, strNum) => str.forEach(
                 elem => elem.potentialDiff = potentialsClmn[elem.i] + potentialsStr[elem.j] - elem.tax));
@@ -255,6 +242,7 @@
             }));
             return maxPotentialDiffElem.potentialDiff > 0 && maxPotentialDiffElem.value === null ? maxPotentialDiffElem : null;
         }
+
 
         const makeContour = element => {
             const contour = [];
@@ -299,11 +287,11 @@
 
             let flatContour = [];
             flatContour.push(element);
-            console.log("contour: ", contour);
             contour.flat().forEach(elem => { if (elem && elem.value) flatContour.push(elem) });
             console.log("finalContour: ", flatContour);
             return flatContour;
         }
+
 
         const transform = (contour, maxPotentialDiffElem) => {
 
@@ -323,26 +311,31 @@
 
             let num = absoluteMaximum;
             contour.forEach(elem => {
-                if (elem.sign == -1 && elem.value != 0 && elem.value < num) num = elem.value;
+                if (elem.sign == -1 && elem.value > 0 && elem.value < num) num = elem.value;
             });
 
-            contour.forEach(elem => matrixCells[elem.i][elem.j].value += num * elem.sign);
+            contour.forEach(elem => {
+                if (elem.value > -1) {
+                    matrixCells[elem.i][elem.j].value += num * elem.sign
+                } else if (elem.value == -1) matrixCells[elem.i][elem.j].value = num * elem.sign
+            });
         }
 
         const countSum = matrixCells => {
             let sum = 0;
             matrixCells.forEach(str => str.forEach(elem => {
-                if (elem.value) { sum += elem.value * elem.tax }
+                if (elem.value > 0) { sum += elem.value * elem.tax }
             }));
             return sum;
         }
+
 
         calcBtn.addEventListener('click', () => {
             let inputs = document.querySelectorAll('.matrixField');
             console.log(inputs)
             let cons = document.querySelectorAll('.pinkField');
             let prods = document.querySelectorAll('.purpleField');
-            matrixCells = fillCells(inputs, cons, prods);
+            // matrixCells = fillCells(inputs, cons, prods);
 
             // matrixCells = [
             //     [{ i: 0, j: 0, value: null, tax: 17, sign: 1 },
@@ -368,6 +361,57 @@
             // ]
             // consValues = [11, 11, 11, 11, 16]
             // prodsValues = [15, 15, 15, 15]
+
+            matrixCells = [
+                [{ i: 0, j: 0, value: null, tax: 3, sign: 1 },
+                { i: 0, j: 1, value: null, tax: 12, sign: 1 },
+                { i: 0, j: 2, value: null, tax: 8, sign: 1 },
+                { i: 0, j: 3, value: null, tax: 20, sign: 1 },
+                { i: 0, j: 4, value: null, tax: 8, sign: 1 }],
+                [{ i: 1, j: 0, value: null, tax: 13, sign: 1 },
+                { i: 1, j: 1, value: null, tax: 21, sign: 1 },
+                { i: 1, j: 2, value: null, tax: 24, sign: 1 },
+                { i: 1, j: 3, value: null, tax: 13, sign: 1 },
+                { i: 1, j: 4, value: null, tax: 20, sign: 1 }],
+                [{ i: 2, j: 0, value: null, tax: 20, sign: 1 },
+                { i: 2, j: 1, value: null, tax: 30, sign: 1 },
+                { i: 2, j: 2, value: null, tax: 24, sign: 1 },
+                { i: 2, j: 3, value: null, tax: 7, sign: 1 },
+                { i: 2, j: 4, value: null, tax: 26, sign: 1 }],
+                [{ i: 3, j: 0, value: null, tax: 1, sign: 1 },
+                { i: 3, j: 1, value: null, tax: 5, sign: 1 },
+                { i: 3, j: 2, value: null, tax: 1, sign: 1 },
+                { i: 3, j: 3, value: null, tax: 5, sign: 1 },
+                { i: 3, j: 4, value: null, tax: 2, sign: 1 }],
+            ]
+            consValues = [8, 8, 7, 7, 22]
+            prodsValues = [12, 15, 17, 8]
+
+            // matrixCells = [
+            //     [{ i: 0, j: 0, value: null, tax: 16, sign: 1 },
+            //     { i: 0, j: 1, value: null, tax: 30, sign: 1 },
+            //     { i: 0, j: 2, value: null, tax: 17, sign: 1 },
+            //     { i: 0, j: 3, value: null, tax: 10, sign: 1 },
+            //     { i: 0, j: 4, value: null, tax: 4, sign: 1 }],
+            //     [{ i: 1, j: 0, value: null, tax: 30, sign: 1 },
+            //     { i: 1, j: 1, value: null, tax: 27, sign: 1 },
+            //     { i: 1, j: 2, value: null, tax: 26, sign: 1 },
+            //     { i: 1, j: 3, value: null, tax: 9, sign: 1 },
+            //     { i: 1, j: 4, value: null, tax: 23, sign: 1 }],
+            //     [{ i: 2, j: 0, value: null, tax: 13, sign: 1 },
+            //     { i: 2, j: 1, value: null, tax: 4, sign: 1 },
+            //     { i: 2, j: 2, value: null, tax: 22, sign: 1 },
+            //     { i: 2, j: 3, value: null, tax: 3, sign: 1 },
+            //     { i: 2, j: 4, value: null, tax: 1, sign: 1 }],
+            //     [{ i: 3, j: 0, value: null, tax: 3, sign: 1 },
+            //     { i: 3, j: 1, value: null, tax: 1, sign: 1 },
+            //     { i: 3, j: 2, value: null, tax: 5, sign: 1 },
+            //     { i: 3, j: 3, value: null, tax: 4, sign: 1 },
+            //     { i: 3, j: 4, value: null, tax: 24, sign: 1 }],
+            // ]
+            // consValues = [7, 7, 7, 7, 2]
+            // prodsValues = [4, 6, 10, 10]
+
 
             // matrixCells = [
             //     [{ i: 0, j: 0, value: null, tax: 7, sign: 1 },
@@ -413,6 +457,7 @@
 
             console.log("matrixCells ", matrixCells);
             createReferencePlan();
+            // for (let i = 0; i < 1; i++) {
             do {
                 let { potentialsStr, potentialsClmn } = findPotentials(matrixCells);
                 console.log("potentialsStr: ", potentialsStr);
@@ -425,12 +470,15 @@
                 }
                 console.log("MATRIX TRANSFORMED", matrixCells);
                 console.log("SUM ", countSum(matrixCells));
-                matrixCells.forEach(str => str.forEach(elem => { if (elem.value === 0) elem.value = null }));
+                // matrixCells.forEach(str => str.forEach(elem => { if (elem.value === 0) elem.value = null }));
             } while (maxPotentialDiffElem)
+            // }
             console.log("cons.length: ", cons.length);
+            matrixCells.forEach(str => str.forEach(elem => { if (elem.value === 0 || elem.value === -1) elem.value = null }));
             inputs.forEach((input, ind) => input.value = matrixCells[Math.trunc(ind / cons.length)][ind % cons.length].value);
             answerOutput.innerHTML = `Оптимальный план: ${countSum(matrixCells)}`;
         });
+
 
         submitBtn.addEventListener('click', e => {
             if (numOfCons.value && numOfProd.value) {
